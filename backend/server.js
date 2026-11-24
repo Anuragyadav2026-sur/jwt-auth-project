@@ -12,8 +12,10 @@ const authRoutes = require("./routes/authRoutes");
 const app = express();
 
 // Check required environment variables
-if (!process.env.JWT_SECRET ||
-    process.env.JWT_SECRET.length < 32) {
+if (
+  !process.env.JWT_SECRET ||
+  process.env.JWT_SECRET.length < 32
+) {
   throw new Error("JWT_SECRET must be at least 32 characters");
 }
 
@@ -30,16 +32,30 @@ if (!fs.existsSync(usersFile)) {
 // Middleware
 app.use(express.json());
 
+// Allowed frontend origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://jwt-auth-frontend-dqpf.onrender.com"
+];
+
+// CORS configuration
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true
   })
 );
 
+// Cookie parser
 app.use(cookieParser());
 
-// Routes
+// Authentication routes
 app.use("/api/auth", authRoutes);
 
 // Default route
@@ -61,6 +77,6 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
